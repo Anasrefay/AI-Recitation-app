@@ -1,0 +1,6 @@
+{
+  "name": "مصحف المدينة الرقمي - المصحف الشريف والتسجيل الصوتي",
+  "description": "تطبيق مصحف المدينة المنورة الرقمي برواية حفص عن عاصم مع ميزة تسجيل التلاوة الشخصية والعمل دون اتصال بالإنترنت",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

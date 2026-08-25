@@ -1,0 +1,18 @@
+{
+  "short_name": "المصحف",
+  "name": "مصحف المدينة الرقمي",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#1c1917",
+  "theme_color": "#1c1917",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "ar",
+  "dir": "rtl"
+}

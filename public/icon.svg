@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1e3a24"/>
+      <stop offset="100%" stop-color="#0c1a10"/>
+    </radialGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f6d365"/>
+      <stop offset="50%" stop-color="#fda085"/>
+      <stop offset="100%" stop-color="#d4af37"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="none" stroke="#d4af37" stroke-width="4" stroke-opacity="0.4"/>
+  <path d="M256 120 C200 120 140 150 110 180 V370 C140 340 200 320 256 320 C312 320 372 340 402 370 V180 C372 150 312 120 256 120 Z" fill="none" stroke="#d4af37" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M256 120 V320" stroke="#d4af37" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="256" cy="210" r="16" fill="#d4af37"/>
+  <text x="256" y="430" font-family="Amiri, serif" font-size="42" font-weight="bold" fill="#f6d365" text-anchor="middle">القرآن الكريم</text>
+</svg>

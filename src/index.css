@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'KFGQPC Uthmanic Hafs';
+  src: url('https://cdn.jsdelivr.net/gh/mushafdatabase/kfgqpc-uthmanic-script-hafs-regular@master/KFGQPC%20Uthmanic%20Script%20HAFS%20Regular.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/gh/mushafdatabase/kfgqpc-uthmanic-script-hafs-regular@master/KFGQPC%20Uthmanic%20Script%20HAFS%20Regular.otf') format('opentype');
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --mushaf-bg-light: #fffdf6;
+    --mushaf-border-light: #d4af37;
+    --mushaf-gold: #c59b27;
+    --mushaf-green: #1a4329;
+    --mushaf-teal: #136f63;
+  }
+
+  body {
+    font-family: 'Cairo', 'Amiri', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.font-arabic {
+  font-family: 'Cairo', 'Amiri', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.font-amiri {
+  font-family: 'Amiri', 'Amiri Quran', 'Scheherazade New', serif;
+}
+
+.font-quran {
+  font-family: 'KFGQPC Uthmanic Hafs', 'Amiri Quran', 'Scheherazade New', 'Noto Naskh Arabic', 'Amiri', serif;
+}
+
+/* Authentic Quranic typography spacing & justification */
+.quran-page-text {
+  font-family: 'KFGQPC Uthmanic Hafs', 'Amiri Quran', 'Scheherazade New', 'Noto Naskh Arabic', 'Amiri', serif;
+  text-align: justify;
+  text-align-last: center;
+  word-spacing: 0.18em;
+  letter-spacing: 0;
+  direction: rtl;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.ayah {
+  display: inline;
+  transition: all 0.25s ease-in-out;
+  position: relative;
+}
+
+.ayah-text {
+  transition: opacity 0.25s ease-in-out, filter 0.25s ease-in-out, color 0.25s ease-in-out;
+}
+
+.ayah-number-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  position: relative;
+  width: 1.85em;
+  height: 1.85em;
+  margin: 0 0.25em;
+  user-select: none;
+  font-family: 'Amiri Quran', 'Amiri', 'Cairo', serif;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Islamic frame styles */
+.mushaf-frame-classic {
+  border: 12px double #c59b27;
+  outline: 2px solid #1a4329;
+  outline-offset: -6px;
+}
+
+.mushaf-paper-light {
+  background-color: #fffdf7;
+  color: #111827;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+}
+
+.mushaf-paper-sepia {
+  background-color: #f7f1e3;
+  color: #2c2518;
+  box-shadow: 0 4px 20px -2px rgba(90, 70, 40, 0.12), 0 2px 6px -1px rgba(90, 70, 40, 0.06);
+}
+
+.mushaf-paper-dark {
+  background-color: #18181b;
+  color: #f4f4f5;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Eye-friendly Dark Mode filter for Mushaf pages */
+.dark-mushaf-filter {
+  filter: invert(0.92) hue-rotate(180deg) contrast(1.1) brightness(0.95);
+}
+
+.sepia-mushaf-filter {
+  filter: sepia(0.35) contrast(1.05) brightness(0.98);
+}
+
+/* Smooth page transitions */
+.page-flip-enter {
+  opacity: 0;
+  transform: scale(0.985);
+}
+
+.page-flip-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes bounceOnce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-bounceOnce {
+  animation: bounceOnce 0.6s ease-in-out;
+}
+
+/* Custom Scrollbar for Arabic lists */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.5);
+}
