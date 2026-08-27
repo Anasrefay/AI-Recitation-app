@@ -1,0 +1,7 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+python-multipart==0.0.20
+pydantic-settings==2.10.1
+jiwer>=3.0,<4
+huggingface_hub>=0.25,<1
+aiohttp>=3.9,<4

@@ -1,0 +1,28 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: production
+      CORS_ORIGINS: http://localhost:8080
+      HF_TOKEN: ${HF_TOKEN}
+      HF_MODEL_ID: ${HF_MODEL_ID:-openai/whisper-large-v3-turbo}
+      HF_PROVIDER: ${HF_PROVIDER:-hf-inference}
+      MAX_AUDIO_MB: ${MAX_AUDIO_MB:-25}
+      HF_TIMEOUT_SECONDS: ${HF_TIMEOUT_SECONDS:-30}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_BASE_URL: "/"
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
