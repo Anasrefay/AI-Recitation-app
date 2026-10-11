@@ -24,6 +24,7 @@ interface PageNavigatorProps {
   isRecordingActive: boolean;
   recordingCountForCurrentPage: number;
   onOpenIndex: (tab: 'surah' | 'juz') => void;
+  viewMode?: 'image' | 'text';
 }
 
 export const PageNavigator: React.FC<PageNavigatorProps> = ({
@@ -35,7 +36,8 @@ export const PageNavigator: React.FC<PageNavigatorProps> = ({
   onOpenRecording,
   isRecordingActive,
   recordingCountForCurrentPage,
-  onOpenIndex
+  onOpenIndex,
+  viewMode
 }) => {
   const [sliderValue, setSliderValue] = useState(currentPage);
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -127,7 +129,7 @@ export const PageNavigator: React.FC<PageNavigatorProps> = ({
             سورة {metadata.surahName}
           </button>
 
-          {onToggleHideText && (
+          {onToggleHideText && viewMode !== 'image' && (
             <button
               onClick={onToggleHideText}
               className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border transition ${

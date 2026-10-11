@@ -1,32 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Mic, 
-  Square, 
   Pause, 
   Play, 
   Trash2, 
-  Download, 
-  RotateCcw, 
   Volume2, 
   AlertCircle,
-  Check,
-  Music,
   X,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Sparkles,
+  Settings,
+  CheckCircle2,
+  SendHorizontal,
+  Zap,
+  Clock,
+  Radio,
+  Eye
 } from 'lucide-react';
 import { VoiceRecorder } from '../../lib/recording/recorder';
-import { RecordingState, VoiceRecording } from '../../lib/recording/types';
-import { saveRecording, getRecordingsByPage, deleteRecording, downloadRecordingAudio, StoredRecording } from '../../lib/recording/storage';
+import { RecordingState } from '../../lib/recording/types';
 import { PageMetadata } from '../../data/pages-metadata';
+import { PageAyah, getPageVerses } from '../../lib/quran-verses';
+import { 
+  analyzeRecitationAudio, 
+  checkRecitationServerHealth 
+} from '../../lib/recitation/recitation-service';
+import { RecitationAnalysisResponse } from '../../lib/recitation/types';
+import { RecitationSettingsModal } from '../Recitation/RecitationSettingsModal';
+
+export type ChunkStreamingMode = 'periodic' | 'pause' | 'manual';
 
 interface RecordingBarProps {
   currentPage: number;
   metadata: PageMetadata;
   isOpen: boolean;
   onClose: () => void;
-  onRecordingSaved: () => void;
+  onRecordingSaved?: () => void;
   autoStart?: boolean;
+  onAnalysisResult?: (result: RecitationAnalysisResponse) => void;
+  onLiveMatchUpdate?: (matchedWordIds: string[]) => void;
+  onStartRecitation?: () => void;
+  onRecordingStateChange?: (isRecording: boolean) => void;
 }
 
 export const RecordingBar: React.FC<RecordingBarProps> = ({
@@ -35,30 +50,142 @@ export const RecordingBar: React.FC<RecordingBarProps> = ({
   isOpen,
   onClose,
   onRecordingSaved,
-  autoStart = false
+  autoStart = false,
+  onAnalysisResult,
+  onLiveMatchUpdate,
+  onStartRecitation,
+  onRecordingStateChange
 }) => {
   const [recorder, setRecorder] = useState<VoiceRecorder | null>(null);
   const [recState, setRecState] = useState<RecordingState>('idle');
   const [recDuration, setRecDuration] = useState<number>(0);
   const [volumeLevel, setVolumeLevel] = useState<number>(0);
-  const [pageRecordings, setPageRecordings] = useState<StoredRecording[]>([]);
-  const [activePlaybackId, setActivePlaybackId] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [playbackProgress, setPlaybackProgress] = useState<number>(0);
-  const [playbackDuration, setPlaybackDuration] = useState<number>(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const hasAutoStartedRef = useRef<boolean>(false);
+  // Chunk streaming options
+  const [streamingMode, setStreamingMode] = useState<ChunkStreamingMode>(() => {
+    return (localStorage.getItem('mushaf_chunk_mode') as ChunkStreamingMode) || 'periodic';
+  });
+  const [chunkIntervalSec, setChunkIntervalSec] = useState<number>(() => {
+    const saved = localStorage.getItem('mushaf_chunk_interval');
+    if (saved) {
+      const parsed = parseFloat(saved);
+      if (!isNaN(parsed) && parsed > 0 && parsed !== 3.5) return parsed;
+    }
+    return 1;
+  });
+  const [showChunkSettings, setShowChunkSettings] = useState<boolean>(false);
+  const [isAnalyzingChunk, setIsAnalyzingChunk] = useState<boolean>(false);
+  const [processedChunksCount, setProcessedChunksCount] = useState<number>(0);
 
-  // Initialize recorder instance
+  // AI Recitation Analysis states
+  const [isFinalAnalyzing, setIsFinalAnalyzing] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [serverOnline, setServerOnline] = useState<boolean | null>(null);
+  const [latestAnalysis, setLatestAnalysis] = useState<RecitationAnalysisResponse | null>(null);
+  const [liveTranscriptionText, setLiveTranscriptionText] = useState<string>('');
+  const [pageAyahs, setPageAyahs] = useState<PageAyah[]>([]);
+
+  const hasAutoStartedRef = useRef<boolean>(false);
+  const speechRecognitionRef = useRef<any>(null);
+  const liveSpeechTranscriptRef = useRef<string>('');
+  const isAnalyzingIncrementalRef = useRef<boolean>(false);
+  const pendingChunkBlobRef = useRef<Blob | null>(null);
+  const pageAyahsRef = useRef<PageAyah[]>([]);
+  pageAyahsRef.current = pageAyahs;
+
+  const currentPageRef = useRef<number>(currentPage);
+  currentPageRef.current = currentPage;
+
+  const chunkTimerRef = useRef<number | null>(null);
+  const recorderRef = useRef<VoiceRecorder | null>(null);
+  recorderRef.current = recorder;
+
+  useEffect(() => {
+    onRecordingStateChange?.(recState === 'recording');
+  }, [recState, onRecordingStateChange]);
+
+  // Save chunk preferences
+  const handleSetStreamingMode = (mode: ChunkStreamingMode) => {
+    setStreamingMode(mode);
+    localStorage.setItem('mushaf_chunk_mode', mode);
+  };
+
+  const handleSetChunkInterval = (sec: number) => {
+    setChunkIntervalSec(sec);
+    localStorage.setItem('mushaf_chunk_interval', String(sec));
+  };
+
+  // Process chunk incrementally while recording continues
+  const processIncrementalChunk = async (audioBlob: Blob) => {
+    if (!pageAyahsRef.current || pageAyahsRef.current.length === 0) return;
+    if (audioBlob.size < 500) return;
+
+    if (isAnalyzingIncrementalRef.current) {
+      pendingChunkBlobRef.current = audioBlob;
+      return;
+    }
+
+    isAnalyzingIncrementalRef.current = true;
+    setIsAnalyzingChunk(true);
+
+    try {
+      const analysis = await analyzeRecitationAudio(
+        audioBlob,
+        pageAyahsRef.current,
+        currentPageRef.current,
+        liveSpeechTranscriptRef.current
+      );
+
+      if (analysis) {
+        if (analysis.transcription) {
+          setLiveTranscriptionText(analysis.transcription);
+        }
+        if (analysis.matchedWordsCount > 0 || analysis.transcription) {
+          setLatestAnalysis(analysis);
+          if (onAnalysisResult) {
+            onAnalysisResult(analysis);
+          }
+          if (onLiveMatchUpdate && analysis.matchedWordIds && analysis.matchedWordIds.length > 0) {
+            // Keep highlight ONLY on the single word currently being read
+            const currentReadingWordId = analysis.matchedWordIds[analysis.matchedWordIds.length - 1];
+            onLiveMatchUpdate([currentReadingWordId]);
+          }
+        }
+        setProcessedChunksCount((prev) => prev + 1);
+      }
+    } catch (err) {
+      console.warn('Periodic chunk recitation analysis error:', err);
+    } finally {
+      isAnalyzingIncrementalRef.current = false;
+      setIsAnalyzingChunk(false);
+
+      if (pendingChunkBlobRef.current) {
+        const nextBlob = pendingChunkBlobRef.current;
+        pendingChunkBlobRef.current = null;
+        setTimeout(() => {
+          processIncrementalChunk(nextBlob);
+        }, 60);
+      }
+    }
+  };
+
+  // Initialize recorder instance with automatic saktah/pause detection (persists across page flips)
   useEffect(() => {
     const rec = new VoiceRecorder({
       onStateChange: (state) => setRecState(state),
       onTimeUpdate: (seconds) => setRecDuration(seconds),
       onVolumeChange: (vol) => setVolumeLevel(vol),
-      onError: (err) => setErrorMessage(err.message)
+      onError: (err) => setErrorMessage(err.message),
+      onSilenceDetected: (blob) => {
+        // Trigger on pause if streamingMode is 'periodic' or 'pause'
+        if (streamingMode === 'periodic' || streamingMode === 'pause') {
+          processIncrementalChunk(blob);
+        }
+      },
+      silenceThresholdMs: 750, // Responsive ~0.75s pause triggers chunk analysis
+      volumeThreshold: 5
     });
     setRecorder(rec);
 
@@ -67,7 +194,50 @@ export const RecordingBar: React.FC<RecordingBarProps> = ({
         rec.discard();
       }
     };
-  }, []);
+  }, [streamingMode]);
+
+  // Periodic chunk streaming timer during active recording
+  useEffect(() => {
+    if (recState === 'recording' && streamingMode === 'periodic' && recorder) {
+      if (chunkTimerRef.current) clearInterval(chunkTimerRef.current);
+
+      chunkTimerRef.current = window.setInterval(async () => {
+        if (!recorderRef.current || isAnalyzingIncrementalRef.current) return;
+        try {
+          const snapshotBlob = await recorderRef.current.getLatestSnapshotBlob();
+          if (snapshotBlob && snapshotBlob.size > 500) {
+            processIncrementalChunk(snapshotBlob);
+          }
+        } catch (err) {
+          console.warn('Snapshot chunk fetch error:', err);
+        }
+      }, chunkIntervalSec * 1000);
+    } else {
+      if (chunkTimerRef.current) {
+        clearInterval(chunkTimerRef.current);
+        chunkTimerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (chunkTimerRef.current) {
+        clearInterval(chunkTimerRef.current);
+        chunkTimerRef.current = null;
+      }
+    };
+  }, [recState, streamingMode, chunkIntervalSec, recorder]);
+
+  // Fetch page ayahs for comparison reference text
+  useEffect(() => {
+    getPageVerses(currentPage).then((data) => {
+      if (data && data.ayahs) {
+        setPageAyahs(data.ayahs);
+      }
+    });
+    checkRecitationServerHealth().then((res) => {
+      setServerOnline(res.isOnline);
+    });
+  }, [currentPage]);
 
   // Auto-start recording when opened via the mic button
   useEffect(() => {
@@ -80,26 +250,6 @@ export const RecordingBar: React.FC<RecordingBarProps> = ({
     }
   }, [isOpen, autoStart, recorder]);
 
-  // Load existing recordings for current page
-  const loadPageRecordings = async () => {
-    try {
-      const records = await getRecordingsByPage(currentPage);
-      setPageRecordings(records);
-    } catch {
-      // IndexedDB fallback
-    }
-  };
-
-  useEffect(() => {
-    loadPageRecordings();
-    // Stop any active audio player when changing page
-    if (audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-      setActivePlaybackId(null);
-    }
-  }, [currentPage]);
-
   // Format seconds to MM:SS
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -111,6 +261,49 @@ export const RecordingBar: React.FC<RecordingBarProps> = ({
   const handleStartRecording = async () => {
     if (!recorder) return;
     setErrorMessage(null);
+    setLatestAnalysis(null);
+    setProcessedChunksCount(0);
+    liveSpeechTranscriptRef.current = '';
+    setLiveTranscriptionText('');
+
+    // Trigger onStartRecitation callback to clear prior highlights and hide text automatically
+    if (onStartRecitation) {
+      onStartRecitation();
+    }
+
+    // Browser Web Speech API for instantaneous real-time transcription feedback
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'ar-SA';
+
+        recognition.onresult = (event: any) => {
+          let fullTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            fullTranscript += event.results[i][0].transcript + ' ';
+          }
+          const cleaned = fullTranscript.trim();
+          liveSpeechTranscriptRef.current = cleaned;
+          // Show live interim words immediately until Whisper chunk locks in
+          if (cleaned) {
+            setLiveTranscriptionText(cleaned);
+          }
+        };
+
+        recognition.onerror = (e: any) => {
+          console.warn('SpeechRecognition error:', e.error);
+        };
+
+        recognition.start();
+        speechRecognitionRef.current = recognition;
+      } catch (err) {
+        console.warn('Web Speech API initialization:', err);
+      }
+    }
+
     try {
       await recorder.start();
     } catch (err: unknown) {
@@ -124,33 +317,68 @@ export const RecordingBar: React.FC<RecordingBarProps> = ({
     if (!recorder) return;
     if (recState === 'recording') {
       recorder.pause();
+      if (speechRecognitionRef.current) {
+        try { speechRecognitionRef.current.stop(); } catch {}
+      }
     } else if (recState === 'paused') {
       recorder.resume();
+      if (speechRecognitionRef.current) {
+        try { speechRecognitionRef.current.start(); } catch {}
+      }
     }
   };
 
-  // Stop and save
-  const handleStopAndSave = async () => {
+  // Stop recording and directly send full audio to AI model
+  const handleStopAndAnalyze = async () => {
     if (!recorder) return;
+    if (chunkTimerRef.current) {
+      clearInterval(chunkTimerRef.current);
+      chunkTimerRef.current = null;
+    }
+
+    if (speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.stop();
+        speechRecognitionRef.current = null;
+      } catch {}
+    }
+
     try {
       const result = await recorder.stop();
-      const newRec: VoiceRecording = {
-        id: `rec_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-        pageNumber: currentPage,
-        surahName: metadata.surahName,
-        blob: result.blob,
-        duration: result.duration,
-        createdAt: Date.now(),
-        mimeType: result.mimeType
-      };
-
-      await saveRecording(newRec);
-      await loadPageRecordings();
-      onRecordingSaved();
       setRecDuration(0);
       setVolumeLevel(0);
+
+      if (pageAyahsRef.current && pageAyahsRef.current.length > 0) {
+        setIsFinalAnalyzing(true);
+        try {
+          const analysis = await analyzeRecitationAudio(
+            result.blob,
+            pageAyahsRef.current,
+            currentPageRef.current,
+            liveSpeechTranscriptRef.current
+          );
+          setLatestAnalysis(analysis);
+          if (analysis.transcription) {
+            setLiveTranscriptionText(analysis.transcription);
+          }
+          if (!analysis.transcription) {
+            setErrorMessage('لم يتم التقاط صوت تلاوة واضح. يُرجى التلاوة بصوت مسموع والتأكد من إذن الميكروفون.');
+          }
+          if (onAnalysisResult) {
+            onAnalysisResult(analysis);
+          }
+          if (onLiveMatchUpdate) {
+            onLiveMatchUpdate([]);
+          }
+          if (onRecordingSaved) {
+            onRecordingSaved();
+          }
+        } finally {
+          setIsFinalAnalyzing(false);
+        }
+      }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'فشل إيقاف وحفظ التسجيل';
+      const msg = err instanceof Error ? err.message : 'فشل إيقاف التسجيل وتحليله';
       setErrorMessage(msg);
     }
   };
@@ -158,273 +386,143 @@ export const RecordingBar: React.FC<RecordingBarProps> = ({
   // Discard recording
   const handleDiscard = () => {
     if (!recorder) return;
+    if (chunkTimerRef.current) {
+      clearInterval(chunkTimerRef.current);
+      chunkTimerRef.current = null;
+    }
     recorder.discard();
     setRecDuration(0);
     setVolumeLevel(0);
-  };
-
-  // Play a stored recording
-  const handlePlayRecording = (recording: StoredRecording) => {
-    if (activePlaybackId === recording.id && audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        audioRef.current.play();
-        setIsPlaying(true);
-      }
-      return;
+    setLatestAnalysis(null);
+    setLiveTranscriptionText('');
+    setProcessedChunksCount(0);
+    if (onLiveMatchUpdate) {
+      onLiveMatchUpdate([]);
     }
-
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-
-    const audioUrl = URL.createObjectURL(recording.blob);
-    const audio = new Audio(audioUrl);
-    audioRef.current = audio;
-    setActivePlaybackId(recording.id);
-    setIsPlaying(true);
-    setPlaybackDuration(recording.duration);
-
-    audio.ontimeupdate = () => {
-      setPlaybackProgress(audio.currentTime);
-    };
-
-    audio.onended = () => {
-      setIsPlaying(false);
-      setPlaybackProgress(0);
-    };
-
-    audio.play().catch(() => {
-      setIsPlaying(false);
-    });
-  };
-
-  // Delete a recording
-  const handleDeleteRecording = async (id: string) => {
-    if (activePlaybackId === id && audioRef.current) {
-      audioRef.current.pause();
-      setActivePlaybackId(null);
-      setIsPlaying(false);
-    }
-    await deleteRecording(id);
-    await loadPageRecordings();
-    onRecordingSaved();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 z-40 px-2 sm:px-4 pointer-events-none animate-slideUp">
-      <div className="max-w-2xl mx-auto bg-stone-900/95 text-stone-100 border border-amber-500/30 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden pointer-events-auto transition-all">
-        {/* Header Drawer Control */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-stone-950/80 border-b border-stone-800">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></div>
-            <span className="text-xs sm:text-sm font-bold font-amiri text-amber-200">
-              تسجيل التلاوة - الصفحة {currentPage} (سورة {metadata.surahName})
-            </span>
-          </div>
+    <>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1 text-stone-400 hover:text-white rounded transition"
-              title={isExpanded ? "تصغير" : "توسيع"}
-            >
-              {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1 text-stone-400 hover:text-white rounded transition"
-              title="إغلاق لوحة التسجيل"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+     <div
+        className="fixed z-40 pointer-events-none animate-slideUp
+                  bottom-2 left-0 right-0 px-2
+                  lg:bottom-6 lg:right-6 lg:left-auto lg:w-[380px] lg:px-0"
+      >
+        <div className="max-w-2xl mx-auto lg:max-w-none lg:mx-0 bg-stone-900/95 text-stone-100 border border-amber-500/30 rounded-3xl shadow-2xl backdrop-blur-md overflow-hidden pointer-events-auto transition-all">
 
-        {isExpanded && (
-          <div className="p-3 sm:p-4 space-y-3">
-            {/* Error banner if any */}
-            {errorMessage && (
-              <div className="p-3 rounded-xl bg-rose-950/90 border border-rose-700/80 text-rose-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-lg animate-fadeIn">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 shrink-0 text-rose-400 mt-0.5" />
-                  <div className="leading-relaxed">
-                    <span className="font-bold block text-rose-300 mb-0.5">تعذر تشغيل الميكروفون:</span>
-                    <span>{errorMessage}</span>
+          {isExpanded && (
+            <div className="p-2.5 sm:p-3 space-y-2">
+              {/* Error banner if any */}
+              {errorMessage && (
+                <div className="p-3 rounded-xl bg-rose-950/90 border border-rose-700/80 text-rose-200 text-xs flex items-start justify-between gap-3 shadow-lg animate-fadeIn">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <AlertCircle className="w-5 h-5 shrink-0 text-rose-400 mt-0.5" />
+                    <div className="leading-relaxed">
+                      <span className="font-bold block text-rose-300 mb-0.5">ملاحظة:</span>
+                      <span>{errorMessage}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={handleStartRecording}
+                      className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition border border-rose-400/40 shadow-sm"
+                    >
+                      إعادة المحاولة
+                    </button>
+                    <button
+                      onClick={() => setErrorMessage(null)}
+                      aria-label="إغلاق الملاحظة"
+                      title="إغلاق"
+                      className="p-1 rounded-md text-rose-300 hover:text-white hover:bg-rose-800/60 transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={handleStartRecording}
-                  className="shrink-0 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition border border-rose-400/40 shadow-sm"
-                >
-                  إعادة المحاولة
-                </button>
-              </div>
-            )}
+              )}
 
-            {/* Active Recording State vs Idle State */}
-            {recState === 'idle' ? (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-stone-950/60 p-3 rounded-xl border border-stone-800">
-                <div className="text-xs text-stone-300 text-center sm:text-right">
-                  <p className="font-semibold text-amber-300">سجّل تلاوتك الخاصة لهذه الصفحة</p>
-                  <p className="text-stone-400 text-[11px]">يتم حفظ التسجيل في المتصفح فقط للاستماع إليه ومراجعته</p>
+              {/* Final Analysis in Progress Loading */}
+              {isFinalAnalyzing && (
+                <div className="p-4 rounded-2xl bg-amber-950/50 border border-amber-500/60 text-amber-200 flex items-center justify-center gap-3 text-xs animate-pulse shadow-md">
+                  <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="font-bold">
+                    جاري المعالجة بالذكاء الاصطناعي...
+                  </span>
                 </div>
+              )}
 
-                <button
-                  onClick={handleStartRecording}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-sm font-bold shadow-lg shadow-rose-600/30 transition whitespace-nowrap"
-                >
-                  <Mic className="w-4 h-4" />
-                  <span>بدء التسجيل</span>
-                </button>
-              </div>
-            ) : (
-              /* Active Recording Panel */
-              <div className="bg-stone-950/80 p-4 rounded-xl border border-rose-500/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  {/* Timer and Status */}
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3.5 h-3.5 rounded-full ${
-                      recState === 'recording' ? 'bg-rose-500 animate-ping' : 'bg-amber-500'
-                    }`}></div>
-                    <span className="font-mono text-xl font-bold text-stone-100 tracking-wider">
+
+              {/* Mic / Pause button + timer */}
+              <div
+                dir="ltr"
+                className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-stone-950/60 border border-stone-800/80"
+              >
+                {/* الجنب الشمال: تلميح أو زرار إنهاء */}
+                {recState === 'idle' ? (
+                  <p dir="rtl" className="text-[11px] text-stone-400">
+                    {streamingMode === 'pause'
+                      ? 'يتم إرسال الصوت فور التوقف أو السكتة بين الآيات'
+                      : streamingMode === 'manual'
+                      ? 'يتم إرسال الصوت وتحليله كاملاً عند الضغط على إنهاء'
+                      : ''}
+                  </p>
+                ) : (
+                  <button
+                    dir="rtl"
+                    onClick={handleStopAndAnalyze}
+                    disabled={isFinalAnalyzing}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-stone-950 text-xs font-extrabold shadow-lg transition disabled:opacity-50"
+                  >
+                    <SendHorizontal className="w-4 h-4 fill-current rotate-180" />
+                    <span>إنهاء وتقييم</span>
+                  </button>
+                )}
+
+                {/* التايمر + الزرار الدائري */}
+                <div className="flex items-center gap-3 ml-auto">
+                  {recState !== 'idle' && (
+                    <span className="font-mono text-lg font-bold text-stone-100 tracking-wider tabular-nums">
                       {formatTime(recDuration)}
                     </span>
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-stone-800 text-stone-300">
-                      {recState === 'recording' ? 'جاري التسجيل...' : 'متوقف مؤقتاً'}
-                    </span>
-                  </div>
-
-                  {/* Volume indicator bar */}
-                  {recState === 'recording' && (
-                    <div className="flex items-center gap-1">
-                      <Volume2 className="w-4 h-4 text-stone-400" />
-                      <div className="w-16 h-2 bg-stone-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-500 transition-all duration-75"
-                          style={{ width: `${volumeLevel}%` }}
-                        ></div>
-                      </div>
-                    </div>
                   )}
-                </div>
 
-                {/* Control Action Buttons */}
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-800">
-                  <div className="flex items-center gap-2">
-                    {/* Pause / Resume Button */}
-                    <button
-                      onClick={handlePauseResume}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold border border-stone-700 transition"
-                    >
-                      {recState === 'recording' ? (
-                        <>
-                          <Pause className="w-3.5 h-3.5 text-amber-400" />
-                          <span>إيقاف مؤقت</span>
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>متابعة</span>
-                        </>
-                      )}
-                    </button>
-
-                    {/* Discard Button */}
-                    <button
-                      onClick={handleDiscard}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-800/60 hover:bg-rose-900/40 text-stone-400 hover:text-rose-300 text-xs transition"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>إلغاء</span>
-                    </button>
-                  </div>
-
-                  {/* Stop and Save Button */}
                   <button
-                    onClick={handleStopAndSave}
-                    className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-stone-950 text-xs font-bold shadow transition"
+                    onClick={recState === 'idle' ? handleStartRecording : handlePauseResume}
+                    aria-label={
+                      recState === 'idle' ? 'التلاوة' : recState === 'recording' ? 'إيقاف مؤقت' : 'متابعة'
+                    }
+                    title={
+                      recState === 'idle' ? 'التلاوة' : recState === 'recording' ? 'إيقاف مؤقت' : 'متابعة'
+                    }
+                    className="flex items-center justify-center w-14 h-14 rounded-full bg-emerald-400 hover:bg-emerald-300 active:bg-emerald-500 text-emerald-950 shadow-lg shadow-emerald-400/30 transition shrink-0"
                   >
-                    <Square className="w-3.5 h-3.5 fill-current" />
-                    <span>حفظ التسجيل</span>
+                    {recState === 'idle' ? (
+                      <Mic className="w-6 h-6" />
+                    ) : recState === 'recording' ? (
+                      <Pause className="w-6 h-6 fill-current" />
+                    ) : (
+                      <Play className="w-6 h-6 fill-current" />
+                    )}
                   </button>
                 </div>
               </div>
-            )}
-
-            {/* List of Saved Recordings for this Page */}
-            {pageRecordings.length > 0 && (
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center justify-between text-xs text-stone-400 font-medium">
-                  <span>تسجيلاتك لهذه الصفحة ({pageRecordings.length})</span>
-                </div>
-
-                <div className="max-h-36 overflow-y-auto space-y-1.5 divide-y divide-stone-800/40">
-                  {pageRecordings.map((recording, idx) => {
-                    const isThisPlaying = activePlaybackId === recording.id && isPlaying;
-                    return (
-                      <div
-                        key={recording.id}
-                        className="pt-1.5 flex items-center justify-between gap-2 text-xs bg-stone-950/40 px-3 py-2 rounded-lg border border-stone-800/80"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <button
-                            onClick={() => handlePlayRecording(recording)}
-                            className={`w-7 h-7 rounded-full flex items-center justify-center transition ${
-                              isThisPlaying
-                                ? 'bg-amber-500 text-stone-950'
-                                : 'bg-stone-800 text-amber-400 hover:bg-stone-700'
-                            }`}
-                            title={isThisPlaying ? "إيقاف مؤقت" : "تشغيل التسجيل"}
-                          >
-                            {isThisPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-                          </button>
-
-                          <div>
-                            <div className="font-semibold text-stone-200">
-                              تلاوة #{pageRecordings.length - idx} • {formatTime(recording.duration)}
-                            </div>
-                            <div className="text-[10px] text-stone-500">
-                              {new Date(recording.createdAt).toLocaleDateString('ar-EG', {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions: Download & Delete */}
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => downloadRecordingAudio(recording)}
-                            className="p-1.5 rounded-lg text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition"
-                            title="تحميل الملف الصوتي"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRecording(recording.id)}
-                            className="p-1.5 rounded-lg text-stone-400 hover:text-rose-400 hover:bg-stone-800 transition"
-                            title="حذف التسجيل"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Recitation AI Settings Modal */}
+      <RecitationSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => {
+          setIsSettingsOpen(false);
+          checkRecitationServerHealth().then((res) => setServerOnline(res.isOnline));
+        }}
+      />
+    </>
   );
 };

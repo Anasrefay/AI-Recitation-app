@@ -3,6 +3,8 @@ import { PageViewer } from './PageViewer';
 import { PageMetadata, getPageMetadata } from '../../data/pages-metadata';
 import { ThemeMode } from '../Header/AppHeader';
 import { ChevronRight, ChevronLeft, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { PageAyah } from '../../lib/quran-verses';
+import { WordMatchStatus, RecitationAnalysisResponse } from '../../lib/recitation/types';
 
 interface MushafContainerProps {
   currentPage: number;
@@ -15,6 +17,15 @@ interface MushafContainerProps {
   onPrevPage: () => void;
   onToggleUI: () => void;
   isUiVisible: boolean;
+  onSelectAyahForTafsir?: (ayah: PageAyah) => void;
+  recitationWordStatuses?: Record<string, { status: WordMatchStatus; spoken?: string }>;
+  latestRecitationAnalysis?: RecitationAnalysisResponse;
+  activeLiveWordIds?: Set<string>;
+  onClearRecitationHighlights?: () => void;
+  viewMode?: 'image' | 'text';
+  onToggleViewMode?: () => void;
+  isRecording?: boolean;
+  onStartRecording?: () => void;
 }
 
 export const MushafContainer: React.FC<MushafContainerProps> = ({
@@ -27,7 +38,16 @@ export const MushafContainer: React.FC<MushafContainerProps> = ({
   onNextPage,
   onPrevPage,
   onToggleUI,
-  isUiVisible
+  isUiVisible,
+  onSelectAyahForTafsir,
+  recitationWordStatuses,
+  latestRecitationAnalysis,
+  activeLiveWordIds,
+  onClearRecitationHighlights,
+  viewMode = 'image',
+  onToggleViewMode,
+  isRecording = false,
+  onStartRecording
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -150,6 +170,15 @@ export const MushafContainer: React.FC<MushafContainerProps> = ({
               zoomLevel={zoomLevel}
               isTextHidden={isTextHidden}
               onToggleHideText={onToggleHideText}
+              onSelectAyahForTafsir={onSelectAyahForTafsir}
+              recitationWordStatuses={recitationWordStatuses}
+              activeLiveWordIds={activeLiveWordIds}
+              onClearRecitationHighlights={onClearRecitationHighlights}
+              onAutoNextPage={onNextPage}
+              viewMode={viewMode}
+              onToggleViewMode={onToggleViewMode}
+              isRecording={isRecording}
+              onStartRecording={onStartRecording}
             />
             {/* Left Page (Even) */}
             <PageViewer
@@ -160,6 +189,15 @@ export const MushafContainer: React.FC<MushafContainerProps> = ({
               zoomLevel={zoomLevel}
               isTextHidden={isTextHidden}
               onToggleHideText={onToggleHideText}
+              onSelectAyahForTafsir={onSelectAyahForTafsir}
+              recitationWordStatuses={recitationWordStatuses}
+              activeLiveWordIds={activeLiveWordIds}
+              onClearRecitationHighlights={onClearRecitationHighlights}
+              onAutoNextPage={onNextPage}
+              viewMode={viewMode}
+              onToggleViewMode={onToggleViewMode}
+              isRecording={isRecording}
+              onStartRecording={onStartRecording}
             />
           </div>
         ) : (
@@ -173,6 +211,16 @@ export const MushafContainer: React.FC<MushafContainerProps> = ({
               zoomLevel={zoomLevel}
               isTextHidden={isTextHidden}
               onToggleHideText={onToggleHideText}
+              onSelectAyahForTafsir={onSelectAyahForTafsir}
+              recitationWordStatuses={recitationWordStatuses}
+              latestRecitationAnalysis={latestRecitationAnalysis}
+              activeLiveWordIds={activeLiveWordIds}
+              onClearRecitationHighlights={onClearRecitationHighlights}
+              onAutoNextPage={onNextPage}
+              viewMode={viewMode}
+              onToggleViewMode={onToggleViewMode}
+              isRecording={isRecording}
+              onStartRecording={onStartRecording}
             />
           </div>
         )}

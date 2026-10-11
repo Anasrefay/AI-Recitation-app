@@ -15,4 +15,7 @@ export interface RecorderOptions {
   onTimeUpdate?: (seconds: number) => void;
   onVolumeChange?: (volume: number) => void; // 0 to 100
   onError?: (error: Error) => void;
+  onSilenceDetected?: (audioBlob: Blob, durationSeconds: number) => void;
+  silenceThresholdMs?: number; // e.g. 1100ms - 1500ms of pause/silence to trigger
+  volumeThreshold?: number;    // volume below which is considered pause/silence (default ~5)
 }

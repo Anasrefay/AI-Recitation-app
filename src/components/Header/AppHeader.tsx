@@ -5,10 +5,14 @@ import {
   Sun, 
   Coffee, 
   Maximize, 
-  Minimize,
-  Sliders,
-  Eye,
-  EyeOff
+  Minimize, 
+  Sliders, 
+  Eye, 
+  EyeOff, 
+  BrainCircuit,
+  Volume2,
+  Image as ImageIcon,
+  FileText
 } from 'lucide-react';
 import { PageMetadata } from '../../data/pages-metadata';
 import { QuranAiLogo } from './QuranAiLogo';
@@ -21,10 +25,14 @@ interface AppHeaderProps {
   onThemeChange: (theme: ThemeMode) => void;
   onOpenIndex: (initialTab?: 'surah' | 'juz') => void;
   onOpenSettings: () => void;
+  onOpenTafsir?: () => void;
+  onOpenAudioPlayer?: () => void;
   isTextHidden: boolean;
   onToggleHideText: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  viewMode?: 'image' | 'text';
+  onToggleViewMode?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -33,10 +41,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onThemeChange,
   onOpenIndex,
   onOpenSettings,
+  onOpenTafsir,
+  onOpenAudioPlayer,
   isTextHidden,
   onToggleHideText,
   isFullscreen,
-  onToggleFullscreen
+  onToggleFullscreen,
+  viewMode = 'image',
+  onToggleViewMode
 }) => {
   const cycleTheme = () => {
     if (theme === 'light') onThemeChange('sepia');
@@ -49,18 +61,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
         {/* Brand Zone - Custom Quran AI Logo Badge */}
         <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
-          <div className="flex items-center group cursor-pointer" onClick={() => onOpenIndex('surah')} title="فهرس السور والأجزاء">
-            <QuranAiLogo className="h-8 sm:h-9" />
+          <div
+            className="flex items-center group cursor-pointer"
+            onClick={() => onOpenIndex('surah')}
+            title="فهرس السور والأجزاء"
+          >
+            <img src="/QuranLogo.png" alt="صورة المصحف" className="h-8 sm:h-9" />
+            <span
+              className="ms-2 sm:ms-3 font-ruqaa font-bold text-xl sm:text-2xl leading-normal
+                        bg-gradient-to-b from-yellow-200 via-amber-400 to-amber-600
+                        bg-clip-text text-transparent
+                        drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]
+                        group-hover:brightness-110 transition"
+            >
+              القرآن الكريم
+            </span>
           </div>
 
-          {/* Current Page Info Chip */}
-          <div className="hidden md:flex items-center gap-2 bg-stone-800/80 px-3 py-1 rounded-full border border-stone-700/60 text-xs text-stone-300">
-            <span className="font-semibold text-amber-300">سورة {metadata.surahName}</span>
-            <span className="text-stone-500">•</span>
-            <span>الجزء {metadata.juzNumber}</span>
-            <span className="text-stone-500">•</span>
-            <span>الصفحة {metadata.pageNumber}</span>
-          </div>
         </div>
 
         {/* Navigation Actions */}
@@ -75,27 +92,42 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <span>الفهرس</span>
           </button>
 
-          {/* Hide/Show Verses Text (Icon-only button placed next to the theme mode) */}
-          <button
-            onClick={onToggleHideText}
-            className={`p-1.5 sm:p-2 rounded-lg border transition ${
-              isTextHidden
-                ? 'bg-amber-600 hover:bg-amber-500 text-stone-950 border-amber-400 ring-2 ring-amber-400/40 shadow-md'
-                : 'bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white border-stone-700/70'
-            }`}
-            title={
-              isTextHidden
-                ? 'إظهار نص الآيات (إيقاف وضع التسميع)'
-                : 'إخفاء نص الآيات للتسميع'
-            }
-            aria-label="إخفاء أو إظهار نص الآيات"
-          >
-            {isTextHidden ? (
-              <EyeOff className="w-4 h-4 text-stone-950 shrink-0 animate-pulse" />
-            ) : (
-              <Eye className="w-4 h-4 text-amber-400 shrink-0" />
-            )}
-          </button>
+          {/* AI Tafsir Quick Button */}
+          {onOpenTafsir && (
+            <button
+              onClick={onOpenTafsir}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 hover:text-amber-200 border border-amber-600/40 text-xs sm:text-sm font-medium transition shadow-sm whitespace-nowrap cursor-pointer"
+              title="تفسير الآيات بالذكاء الاصطناعي (FastAPI)"
+            >
+              <BrainCircuit className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="hidden sm:inline">تفسير AI</span>
+            </button>
+          )}
+
+
+          {/* Hide/Show Verses Text (Only in text mode, hidden in image mode) */}
+          {viewMode !== 'image' && (
+            <button
+              onClick={onToggleHideText}
+              className={`p-1.5 sm:p-2 rounded-lg border transition ${
+                isTextHidden
+                  ? 'bg-amber-600 hover:bg-amber-500 text-stone-950 border-amber-400 ring-2 ring-amber-400/40 shadow-md'
+                  : 'bg-stone-800 hover:bg-stone-700 text-stone-200 hover:text-white border-stone-700/70'
+              }`}
+              title={
+                isTextHidden
+                  ? 'إظهار نص الآيات (إيقاف وضع التسميع)'
+                  : 'إخفاء نص الآيات للتسميع'
+              }
+              aria-label="إخفاء أو إظهار نص الآيات"
+            >
+              {isTextHidden ? (
+                <EyeOff className="w-4 h-4 text-stone-950 shrink-0 animate-pulse" />
+              ) : (
+                <Eye className="w-4 h-4 text-amber-400 shrink-0" />
+              )}
+            </button>
+          )}
 
           {/* Theme Toggle Button */}
           <button
@@ -113,7 +145,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <button
             onClick={onOpenSettings}
             className="p-1.5 sm:p-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700/70 transition"
-            title="إعدادات القراءة والمظهر"
+            title="إعدادات القراءة والمظهر وسيرفر FastAPI"
             aria-label="إعدادات القراءة"
           >
             <Sliders className="w-4 h-4 text-stone-300" />

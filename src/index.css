@@ -33,6 +33,30 @@
   font-family: 'Amiri', 'Amiri Quran', 'Scheherazade New', serif;
 }
 
+.font-islamic {
+  font-family: 'Amiri', 'Scheherazade New', 'Noto Naskh Arabic', serif;
+}
+
+.font-ruqaa {
+  font-family: 'Aref Ruqaa', 'Amiri', serif;
+}
+
+.font-scheherazade {
+  font-family: 'Scheherazade New', 'Amiri', serif;
+}
+
+.font-naskh {
+  font-family: 'Noto Naskh Arabic', 'Amiri', serif;
+}
+
+/* Islamic manuscript Tafsir text formatting */
+.tafsir-prose {
+  line-height: 2.5;
+  text-align: justify;
+  text-justify: inter-word;
+  word-spacing: 0.05em;
+}
+
 .font-quran {
   font-family: 'KFGQPC Uthmanic Hafs', 'Amiri Quran', 'Scheherazade New', 'Noto Naskh Arabic', 'Amiri', serif;
 }

@@ -11,10 +11,14 @@ import { RecordingBar } from './components/Recording/RecordingBar';
 import { RecordingsListModal } from './components/Recording/RecordingsListModal';
 import { OfflineModal } from './components/Offline/OfflineModal';
 import { SettingsModal } from './components/Settings/SettingsModal';
+import { TafsirModal } from './components/Tafsir/TafsirModal';
+import { AyahAudioModal } from './components/Audio/AyahAudioModal';
 import { getPageMetadata } from './data/pages-metadata';
 import { registerServiceWorker } from './lib/offline/offline-manager';
 import { getAllRecordings, getRecordingsByPage } from './lib/recording/storage';
-import { Mic } from 'lucide-react';
+import { PageAyah, getPageVerses } from './lib/quran-verses';
+import { Mic, BrainCircuit } from 'lucide-react';
+import { WordMatchStatus, RecitationAnalysisResponse } from './lib/recitation/types';
 
 export default function App() {
   // Page number (1 to 604)
@@ -54,6 +58,73 @@ export default function App() {
     return false;
   });
 
+  // View Mode: 'image' (authentic King Fahd Mushaf scan) vs 'text' (interactive digital text)
+  const [viewMode, setViewMode] = useState<'image' | 'text'>(() => {
+    if (typeof window !== 'undefined') {
+      const s = localStorage.getItem('mushaf_view_mode') as 'image' | 'text';
+      if (s && ['image', 'text'].includes(s)) return s;
+    }
+    return 'image';
+  });
+
+  const handleToggleViewMode = () => {
+    setViewMode((prev) => {
+      const nextMode = prev === 'image' ? 'text' : 'image';
+      localStorage.setItem('mushaf_view_mode', nextMode);
+      return nextMode;
+    });
+  };
+
+  // Recitation Analysis Results by Page
+  const [recitationResultsByPage, setRecitationResultsByPage] = useState<
+    Record<number, Record<string, { status: WordMatchStatus; spoken?: string }>>
+  >({});
+  const [recitationAnalysisByPage, setRecitationAnalysisByPage] = useState<
+    Record<number, RecitationAnalysisResponse>
+  >({});
+  const [activeLiveWordIds, setActiveLiveWordIds] = useState<Set<string>>(new Set());
+
+  // Handle Recitation Analysis Result
+  const handleRecitationAnalysisResult = useCallback((result: RecitationAnalysisResponse) => {
+    setRecitationResultsByPage((prev) => ({
+      ...prev,
+      [currentPage]: result.wordStatuses
+    }));
+    setRecitationAnalysisByPage((prev) => ({
+      ...prev,
+      [currentPage]: result
+    }));
+  }, [currentPage]);
+
+  // Handle Live Streaming Word Matching
+  const handleLiveMatchUpdate = useCallback((wordIds: string[]) => {
+    setActiveLiveWordIds(new Set(wordIds));
+  }, []);
+
+  // Clear Highlights on Current Page
+  const handleClearRecitationHighlights = useCallback(() => {
+    setRecitationResultsByPage((prev) => {
+      const copy = { ...prev };
+      delete copy[currentPage];
+      return copy;
+    });
+    setRecitationAnalysisByPage((prev) => {
+      const copy = { ...prev };
+      delete copy[currentPage];
+      return copy;
+    });
+    setActiveLiveWordIds(new Set());
+  }, [currentPage]);
+
+  // Handle starting recitation: automatically clear past results on the page and hide verses for testing
+  const handleStartRecitation = useCallback(() => {
+    handleClearRecitationHighlights();
+    setIsTextHidden(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mushaf_hide_text', 'true');
+    }
+  }, [handleClearRecitationHighlights]);
+
   // Toggle hide text mode
   const handleToggleHideText = useCallback(() => {
     setIsTextHidden(prev => {
@@ -66,10 +137,76 @@ export default function App() {
   // Modals state
   const [isIndexOpen, setIsIndexOpen] = useState(false);
   const [indexTab, setIndexTab] = useState<'surah' | 'juz'>('surah');
-  const [isRecordingBarOpen, setIsRecordingBarOpen] = useState(false);
+  const [isActivelyRecording, setIsActivelyRecording] = useState(false);
   const [isRecordingsListOpen, setIsRecordingsListOpen] = useState(false);
   const [isOfflineModalOpen, setIsOfflineModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // FastAPI AI Tafsir Modal state
+  const [isTafsirOpen, setIsTafsirOpen] = useState(false);
+  const [selectedAyahForTafsir, setSelectedAyahForTafsir] = useState<PageAyah | null>(null);
+
+  // Select specific Ayah to interpret via FastAPI AI
+  const handleSelectAyahForTafsir = useCallback((ayah: PageAyah) => {
+    setSelectedAyahForTafsir(ayah);
+    setIsTafsirOpen(true);
+  }, []);
+
+  // Quick Open Tafsir for the first Ayah on current page if none is actively selected
+  const handleOpenTafsirForCurrentPage = useCallback(async () => {
+    try {
+      const pageData = await getPageVerses(currentPage);
+      if (pageData && pageData.ayahs.length > 0) {
+        setSelectedAyahForTafsir(pageData.ayahs[0]);
+      }
+    } catch {
+      // fallback
+    }
+    setIsTafsirOpen(true);
+  }, [currentPage]);
+
+  // EveryAyah Quran Audio Player Modal state
+  const [isAudioPlayerOpen, setIsAudioPlayerOpen] = useState(false);
+  const [selectedAyahForAudio, setSelectedAyahForAudio] = useState<PageAyah | null>(null);
+  const [pageAyahsForAudio, setPageAyahsForAudio] = useState<PageAyah[]>([]);
+
+  // Keep page ayahs updated for audio player
+  useEffect(() => {
+    let isCurrent = true;
+    getPageVerses(currentPage).then((pageData) => {
+      if (isCurrent && pageData && pageData.ayahs.length > 0) {
+        setPageAyahsForAudio(pageData.ayahs);
+        setSelectedAyahForAudio((prev) => {
+          if (!prev || !pageData.ayahs.some((a) => a.number === prev.number)) {
+            return pageData.ayahs[0];
+          }
+          return prev;
+        });
+      }
+    }).catch(() => {});
+    return () => {
+      isCurrent = false;
+    };
+  }, [currentPage]);
+
+  // Quick Open Audio Player for the first Ayah or selected Ayah on current page
+  const handleOpenAudioPlayerForCurrentPage = useCallback(async () => {
+    try {
+      const pageData = await getPageVerses(currentPage);
+      if (pageData && pageData.ayahs.length > 0) {
+        setPageAyahsForAudio(pageData.ayahs);
+        setSelectedAyahForAudio((prev) => {
+          if (!prev || !pageData.ayahs.some((a) => a.number === prev.number)) {
+            return pageData.ayahs[0];
+          }
+          return prev;
+        });
+      }
+    } catch {
+      // fallback
+    }
+    setIsAudioPlayerOpen(true);
+  }, [currentPage]);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -139,6 +276,12 @@ export default function App() {
     refreshRecordingCounts();
   }, [currentPage]);
 
+  useEffect(() => {
+    if (viewMode !== 'text') {
+      setIsActivelyRecording(false);
+    }
+  }, [viewMode]);
+
   // Navigation handlers
   const handlePageChange = useCallback((newPage: number) => {
     const clamped = Math.max(1, Math.min(604, newPage));
@@ -187,10 +330,14 @@ export default function App() {
             setIsIndexOpen(true);
           }}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenTafsir={handleOpenTafsirForCurrentPage}
+          onOpenAudioPlayer={handleOpenAudioPlayerForCurrentPage}
           isTextHidden={isTextHidden}
           onToggleHideText={handleToggleHideText}
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleToggleFullscreen}
+          viewMode={viewMode}
+          onToggleViewMode={handleToggleViewMode}
         />
       )}
 
@@ -207,37 +354,35 @@ export default function App() {
           onPrevPage={handlePrevPage}
           onToggleUI={() => setIsUiVisible(!isUiVisible)}
           isUiVisible={isUiVisible}
+          onSelectAyahForTafsir={handleSelectAyahForTafsir}
+          recitationWordStatuses={recitationResultsByPage[currentPage]}
+          latestRecitationAnalysis={recitationAnalysisByPage[currentPage]}
+          activeLiveWordIds={activeLiveWordIds}
+          onClearRecitationHighlights={handleClearRecitationHighlights}
+          viewMode={viewMode}
+          onToggleViewMode={handleToggleViewMode}
+          isRecording={isActivelyRecording}
+          onStartRecording={() => {}}
         />
       </main>
 
-      {/* Floating Action Button for One-Tap Voice Recording */}
-      {!isRecordingBarOpen && isUiVisible && (
-        <div className="fixed bottom-6 right-4 sm:right-6 z-30 animate-bounceOnce">
-          <button
-            onClick={() => setIsRecordingBarOpen(true)}
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-xl shadow-rose-900/30 border border-rose-400/30 transition hover:scale-105 active:scale-95 relative"
-            title="تسجيل التلاوة"
-            aria-label="تسجيل التلاوة"
-          >
-            <Mic className="w-5 h-5 text-white" />
-            {recordingsOnPageCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-stone-950 text-[10px] flex items-center justify-center font-bold border-2 border-stone-900">
-                {recordingsOnPageCount}
-              </span>
-            )}
-          </button>
-        </div>
-      )}
 
       {/* Voice Recording Drawer / Bar */}
-      <RecordingBar
-        currentPage={currentPage}
-        metadata={metadata}
-        isOpen={isRecordingBarOpen}
-        autoStart={true}
-        onClose={() => setIsRecordingBarOpen(false)}
-        onRecordingSaved={refreshRecordingCounts}
-      />
+      {/* Voice Recording Bar (المصحف الرقمي فقط) */}
+      {viewMode === 'text' && (
+        <RecordingBar
+          currentPage={currentPage}
+          metadata={metadata}
+          isOpen={true}
+          autoStart={false}
+          onClose={() => {}}
+          onRecordingSaved={refreshRecordingCounts}
+          onAnalysisResult={handleRecitationAnalysisResult}
+          onLiveMatchUpdate={handleLiveMatchUpdate}
+          onStartRecitation={handleStartRecitation}
+          onRecordingStateChange={setIsActivelyRecording}
+        />
+      )}
 
       {/* Index Modal (Searchable Surahs & Juz) */}
       <IndexModal
@@ -271,6 +416,31 @@ export default function App() {
         onThemeChange={setTheme}
         isDoublePage={isDoublePage}
         onToggleDoublePage={handleToggleDoublePage}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
+
+      {/* FastAPI Quran AI Tafsir Modal */}
+      <TafsirModal
+        isOpen={isTafsirOpen}
+        onClose={() => setIsTafsirOpen(false)}
+        ayah={selectedAyahForTafsir}
+        theme={theme}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onAyahChange={setSelectedAyahForTafsir}
+      />
+
+      {/* EveryAyah Quran Audio Recitation Modal */}
+      <AyahAudioModal
+        isOpen={isAudioPlayerOpen}
+        onClose={() => setIsAudioPlayerOpen(false)}
+        currentAyah={selectedAyahForAudio}
+        pageAyahs={pageAyahsForAudio}
+        currentPage={currentPage}
+        theme={theme}
+        onAyahChange={setSelectedAyahForAudio}
+        onNextPage={handleNextPage}
+        onPrevPage={handlePrevPage}
       />
     </div>
   );

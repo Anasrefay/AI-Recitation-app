@@ -59,13 +59,6 @@ export const IndexModal: React.FC<IndexModalProps> = ({
             <BookOpen className="w-5 h-5 text-amber-400" />
             <h2 className="text-lg font-bold font-amiri text-amber-200">فهرس المصحف الشريف</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition"
-            aria-label="إغلاق الفهرس"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Quick Page Jump Bar */}
