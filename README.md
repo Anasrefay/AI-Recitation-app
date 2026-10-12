@@ -1,308 +1,384 @@
-# 📖 مصحف المدينة الرقمي المطور (Digital Madinah Mushaf & AI Recitation Studio)
-
 <div align="center">
 
-![مصحف المدينة الرقمي](docs/images/hero-banner.jpg)
+# مصحف المدينة الرقمي — AI Recitation App
 
-<p align="center">
-  <strong>تطبيق ويب تقدمي (PWA) متكامل لقراءة القرآن الكريم بالرسم العثماني الأصلي، مع نظام ذكاء اصطناعي متطور للتحقق من التسميع كلمة بكلمة، والتفسير والتدبر المعمق، وتسجيل التلاوات الشخصية مع دعم كامل دون اتصال بالإنترنت.</strong>
-</p>
+**مصحف تفاعلي لقراءة القرآن الكريم وحفظه، مع تسميع بالذكاء الاصطناعي كلمة بكلمة، وتفسير مبني على RAG.**
 
-[![React](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Whisper_AI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![PWA](https://img.shields.io/badge/PWA-100%25_Offline-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
-[![License](https://img.shields.io/badge/License-Waqf_%2F_Open_Source-10B981?style=for-the-badge)](LICENSE)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Whisper_&_RAG-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+
+[نظرة عامة](#نظرة-عامة) · [لقطات الشاشة](#لقطات-الشاشة) · [المميزات](#المميزات) · [Getting Started](#getting-started) · [API Reference](#api-reference)
 
 </div>
 
 ---
 
-## 📑 فهرس المحتويات (Table of Contents)
+## Table of Contents
 
-- [نظرة عامة (Overview)](#-نظرة-عامة-overview)
-- [معرض الشاشات والمميزات (Visual Showcase)](#-معرض-الشاشات-والمميزات-visual-showcase)
-- [المميزات الرئيسية (Core Features)](#-المميزات-الرئيسية-core-features)
-  - [1. عرض المصحف الشريف بدقة متناهية](#1-عرض-المصحف-الشريف-بدقة-متناهية-authentic-mushaf-view)
-  - [2. مساعد التسميع والتحقق الصوتي بالذكاء الاصطناعي](#2-مساعد-التسميع-والتحقق-الصوتي-بالذكاء-الاصطناعي-ai-recitation-verification)
-  - [3. التفسير والتدبر الإيماني المعمق](#3-التفسير-والتدبر-الإيماني-المعمق-tafsir--ai-tadabbur)
-  - [4. الاستماع لتلاوات كبار القراء](#4-الاستماع-لتلاوات-كبار-القراء-everyayah-audio-player)
-  - [5. مسجل التلاوات الشخصية والأرشيف الصوتي](#5-مسجل-التلاوات-الشخصية-والأرشيف-الصوتي-personal-voice-studio)
-  - [6. العمل دون اتصال بالإنترنت (PWA)](#6-العمل-دون-اتصال-بالإنترنت-offline--pwa)
-  - [7. أنظمة الألوان والراحة البصرية](#7-أنظمة-الألوان-والراحة-البصرية-comfort-themes)
-- [البنية التقنية والمعمارية (Architecture & Tech Stack)](#-البنية-التقنية-والمعمارية-architecture--tech-stack)
-- [طريقة التشغيل والتثبيت (Installation & Setup)](#-طريقة-التشغيل-والتثبيت-installation--setup)
-  - [تشغيل الواجهة الأمامية (Frontend App)](#تشغيل-الواجهة-الأمامية-frontend-app)
-  - [تشغيل خادم الذكاء الاصطناعي (Whisper FastAPI Server)](#تشغيل-خادم-الذكاء-الاصطناعي-whisper-fastapi-server)
-  - [التشغيل السحابي عبر Google Colab](#التشغيل-السحابي-عبر-google-colab)
-- [هيكل المشروع (Directory Structure)](#-هيكل-المشروع-directory-structure)
-- [مصادر البيانات والتراخيص (Data Sources & Credits)](#-مصادر-البيانات-والتراخيص-data-sources--credits)
-- [الترخيص (License)](#-الترخيص-license)
+**المنتج**
+- [نظرة عامة](#نظرة-عامة)
+- [لقطات الشاشة](#لقطات-الشاشة)
+- [المميزات](#المميزات)
 
----
-
-## 🌟 نظرة عامة (Overview)
-
-**مصحف المدينة الرقمي** هو منصة قرآنية حديثة ومتكاملة تم بناؤها لتجمع بين روعة المصحف الورقي المطبوع بمجمع الملك فهد لطباعة المصحف الشريف بالمدينة المنورة وأحدث تقنيات الويب والذكاء الاصطناعي لعام 2026.
-
-يقدم التطبيق تجربة فريدة لحفظ ومراجعة القرآن الكريم، حيث يمكن للمستخدم إخفاء الآيات واختبار حفظه صوتياً عبر الذكاء الاصطناعي (نماذج Whisper المخصصة للقرآن الكريم)، بالإضافة للاطلاع الفوري على التفاسير الكلاسيكية واستلهام التدبرات الإيمانية، مع تسجيل التلاوات الشخصية والاحتفاظ بها محلياً دون الحاجة للاتصال بالإنترنت.
+**Developer Guide**
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [AI Servers Setup (Google Colab)](#ai-servers-setup-google-colab)
+- [Configuration](#configuration)
+- [API Reference](#api-reference)
+- [Project Structure](#project-structure)
+- [Keyboard Shortcuts](#keyboard-shortcuts)
+- [Troubleshooting](#troubleshooting)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
 
 ---
 
-## 📸 معرض الشاشات والمميزات (Visual Showcase)
+## نظرة عامة
 
-### تجربة قراءة غامرة ومتوافقة مع جميع الأجهزة
-![الأجهزة المدعومة](docs/images/devices-mockup.jpg)
-*واجهة متجاوبة تعمل بسلاسة فائقة على الحواسيب، الأجهزة اللوحية، والهواتف الذكية (iOS & Android)*
+تطبيق ويب يعرض صفحات **مصحف المدينة المنورة** (604 صفحات، رواية حفص عن عاصم)، ويضيف فوقها أدوات تساعد على الحفظ والمراجعة:
 
----
+- **تسميع بالذكاء الاصطناعي:** تتلو الصفحة، فيحوّل نموذج **Whisper** المخصص للقرآن صوتك إلى نص، ثم تُقارَن الكلمات بنص الصفحة ويُلوَّن كل منها (صحيحة / خاطئة / ناقصة).
+- **تفسير ذكي:** يستند إلى **تفسير القرطبي** عبر **RAG**: بحث دلالي في **Qdrant**، ثم توليد الإجابة بنموذج لغوي عبر **Groq**. وتتوفر أنماط: تفسير عام، لغوي وبلاغي، هدايات ودروس، أو سؤال حر عن الآية.
+- **استماع للآية:** تشغيل أي آية بصوت كبار القراء من **EveryAyah** بضغطة واحدة، مع اختيار القارئ وتكرار الآية للمساعدة على الحفظ.
 
-### نظام التسميع والتحقق الصوتي بالذكاء الاصطناعي
-![التحقق من التلاوة](docs/images/recitation-ai.jpg)
-*تحقق فوري من التسميع كلمة بكلمة مع تلوين الكلمات المطابقة، كشف الأخطاء، وإحصائيات دقة النطق*
+> **ملاحظة:** الواجهة الأمامية وحدها تكفي لعرض المصحف والاستماع للقراء. أما **التسميع** و**التفسير** فيحتاجان تشغيل خادمين من نوع `FastAPI` عبر الملفات الموجودة في `notebooks/`، وتفاصيل ذلك في قسم [AI Servers Setup](#ai-servers-setup-google-colab).
 
----
-
-### التفسير والتدبر الإيماني لكل آية
-![نافذة التفسير والتدبر](docs/images/tafsir-tadabbur.jpg)
-*اطلاع سريع على أمهات كتب التفسير (ابن كثير، السعدي، الميسر) مع توليد الفوائد والتدبرات بذكاء اصطناعي رصين*
+> **تنبيه:** نتائج التسميع أداة مساعدة للمراجعة الذاتية، ولا تغني عن التلقي من معلّم متقن لأحكام التجويد.
 
 ---
 
-## ⚡ المميزات الرئيسية (Core Features)
+## لقطات الشاشة
 
-### 1. عرض المصحف الشريف بدقة متناهية (Authentic Mushaf View)
-- **مطابقة 100% لمصحف المدينة المنورة**: 604 صفحات كاملة برواية حفص عن عاصم.
-- **نمطان للعرض**:
-  - **نمط الصفحات المصورة (Image Mode)**: استخدام صفحات مجمع الملك فهد الأصلية عالية الدقة.
-  - **نمط النص الرقمي التفاعلي (Interactive Text Mode)**: خطوط عثمانية أصيلة مع إمكانية التفاعل مع كل آية بالنقر (تفسير، استماع، نسخ).
-- **عرض صفحتين متقابلتين (Double Page Mode)**: محاكاة تجربة المصحف الورقي المفتوح على الشاشات الكبيرة والحواسيب.
-- **ترويسة وتذييل دقيق**: إيضاح اسم السورة، رقم الصفحة، رقم الجزء، الحزب، والربع في كل صفحة.
+### 1. Image Mode — عرض المصحف
 
-### 2. مساعد التسميع والتحقق الصوتي بالذكاء الاصطناعي (AI Recitation Verification)
-- **فحص التلاوة كلمة بكلمة (Word-by-Word Matching)**: اعتماد نموذج `KheemP/whisper-base-quran-lora` المدرب خصيصاً على التلاوات القرآنية.
-- **وضع إخفاء النص للاختبار (Memorization Testing)**: إخفاء نص الآيات مع إبقاء أرقامها، ليتسنى للقارئ التسميع غيباً، لتظهر الكلمات المتقنة تباعاً باللون الأخضر فور نطقها الصحيح.
-- **مؤشرات دقيقة للأداء**:
-  - 🟢 **كلمة صحيحة (Match)**: مطابقة تامة مع النص القرآني.
-  - 🔴 **خطأ في النطق أو الكلمة (Mismatch)**: بيان الكلمة التي قرأها المستخدم والكلمة الصحيحة.
-  - 🟡 **كلمة ناقصة (Missing)**: تنبيه في حال تجاوز آية أو كلمة.
-- **لوحة نتائج ونسبة الدقة (Accuracy Score %)**: تقرير إحصائي مفصل بعد الانتهاء من التلاوة.
+<p align="center">
+  <img src="public/screenshots/MainPage.png" alt="Image Mode" width="85%">
+</p>
 
-### 3. التفسير والتدبر الإيماني المعمق (Tafsir & AI Tadabbur)
-- **مكتبة تفاسير موثوقة**:
-  - تفسير ابن كثير
-  - تفسير السعدي (تيسير الكريم الرحمن)
-  - التفسير الميسر
-  - تفسير الجلالين
-- **التدبر الإيماني بالذكاء الاصطناعي**:
-  - استنباط الهدايات والفوائد الإيمانية والتربوية لكل آية.
-  - الإعجاز اللغوي والبلاغي.
-  - إمكانية طرح أسئلة مخصصة حول الآية وتلقي إجابات مدعمة بالأدلة الشرعية.
-- **ميزة البحث السريع**: بحث لحظي في نص القرآن الكريم وتفاسيره مع الانتقال المباشر.
+صفحات مصحف المدينة الأصلية بجودة عالية، مع شريط علوي للتنقل بين الصفحات والفهرس وتبديل أوضاع العرض.
 
-### 4. الاستماع لتلاوات كبار القراء (EveryAyah Audio Player)
-- الاستماع الفوري لتلاوة أي آية بضغطة زر واحدة.
-- نخبة من كبار قراء العالم الإسلامي:
-  - فضيلة الشيخ محمود خليل الحصري (مرتل ومجود)
-  - فضيلة الشيخ عبد الباسط عبد الصمد
-  - فضيلة الشيخ محمد صديق المنشاوي
-  - فضيلة الشيخ مشاري بن راشد العفاسي
-  - فضيلة الشيخ علي بن عبد الرحمن الحذيفي
-  - فضيلة الشيخ سعود الشريم وماهر المعيقلي
-- إمكانية تكرار الآية لتسهيل الحفظ والترديد.
+### 2. Text Mode — النص التفاعلي
 
-### 5. مسجل التلاوات الشخصية والأرشيف الصوتي (Personal Voice Studio)
-- **تسجيل تلاوة القارئ الشخصية** لكل صفحة على حدة عبر واجهة الميكروفون المدمجة.
-- **مؤقت زمني ومحلل صوتي بصري (Visualizer Waves)** أثناء التسجيل.
-- **تخزين محلي 100%**: حفظ التسجيلات في المتصفح عبر `IndexedDB` دون إرسال أي ملفات صوتية لسيرفر خارجي حفظاً للخصوصية.
-- **أرشيف التسجيلات**: إدارة التلاوات المسجلة، الاستماع إليها، وإمكانية تحميلها كملفات صوتية عالية الجودة بصيغة WAV/WebM.
+<p align="center">
+  <img src="public/screenshots/TextMode.png" alt="Text Mode" width="85%">
+</p>
 
-### 6. العمل دون اتصال بالإنترنت (Offline & PWA)
-- **تطبيق تقدمي (PWA)** قابل للتثبيت كبرنامج مستقل على سطح المكتب (Windows / Mac) والهواتف الذكية (Android / iOS).
-- **Service Worker متطور** يدعم استراتيجية `Cache-First` لتخزين صفحات المصحف والأصول الثابتة.
-- **مدير التحميل دون اتصال (Offline Downloader)**: إمكانية تحميل أجزاء معينة أو المصحف كاملاً (604 صفحات) مسبقاً بضغطة زر واحدة للاستخدام في السفر أو الأماكن الخالية من التغطية.
+نص عثماني قابل للنقر؛ اضغط على أي آية لتشغيلها صوتيًا أو فتح تفسيرها.
 
-### 7. أنظمة الألوان والراحة البصرية (Comfort Themes)
-- **النمط النهاري العاجي (Ivory)**: يحاكي لون ورق المصحف الشريف الفاخر بأريحية تامة للعين.
-- **النمط الدافئ (Sepia)**: للقراءة في الأجواء متوسطة الإضاءة.
-- **النمط الليلي (Dark Mode)**: خلفية داكنة مريحة تمنع إجهاد العين أثناء التلاوة الليلية.
-- **إبقاء الشاشة مضاءة (Wake Lock API)**: منع الشاشة من الانطفاء التلقائي أثناء قراءة الورد اليومي.
+### 3. Recitation Mode — التسميع
+
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <img src="public\screenshots\AppWhileRecording.png" alt="Recitation Mode 1" width="100%">
+    </td>
+    <td align="center" width="50%">
+      <img src="public\screenshots\MistakeDetected.png" alt="Recitation Mode 2" width="100%">
+    </td>
+  </tr>
+</table>
+
+اضغط تسجيل وابدأ التلاوة، فتُلوَّن كل كلمة حسب صحة نطقها.
+
+### 4. Tafsir — نافذة التفسير
+
+<p align="center">
+  <img src="public/screenshots/TafsirWindow.png" alt="Tafsir" width="85%">
+</p>
+
+تفسير الآية من القرطبي بأربعة أنماط: عام، لغوي وبلاغي، هدايات ودروس، أو سؤال حر.
+
+### 5. Ayah Player — الاستماع للقراء
+
+<p align="center">
+  <img src="public/screenshots/AyahReader.png" alt="Ayah Player" width="85%">
+</p>
+
+اختر القارئ من بين 23 تلاوة، وكرّر الآية للمساعدة على الحفظ.
+
+### 6. Settings — الإعدادات
+
+<p align="center">
+  <img src="public/screenshots/Settings.png" alt="Settings" width="85%">
+</p>
+
+تبديل النمط البصري بين Light وSepia وDark، وإدخال روابط خوادم التسميع والتفسير.
 
 ---
 
-## 🏗 البنية التقنية والمعمارية (Architecture & Tech Stack)
+## المميزات
+
+### عرض المصحف
+- **604 صفحات** من مصحف المدينة برواية حفص عن عاصم.
+- **وضعان للعرض:** صور الصفحات بوضع **Image Mode**، أو نص عثماني تفاعلي بوضع **Text Mode** يمكن النقر فيه على أي آية.
+- **عرض صفحتين متقابلتين** على الشاشات الكبيرة، بوضع **Double Page**.
+- **ثلاثة أنماط ألوان:** Light، Sepia، Dark.
+- **فهرس** للسور والأجزاء، وحفظ آخر صفحة وصلت إليها تلقائيًا.
+- **منع انطفاء الشاشة** عبر **Wake Lock**، مع **وضع ملء الشاشة** أثناء القراءة.
+- تنقل بالسحب على الهاتف، وبلوحة المفاتيح على الحاسوب.
+
+### التسميع بالذكاء الاصطناعي
+- نموذج `KheemP/whisper-base-quran-lora` المبني على **Whisper** مع **LoRA** لتحويل التلاوة إلى نص.
+- **مطابقة كلمة بكلمة** مع نص الصفحة عبر خوارزمية محاذاة (`alignment.ts`) مع تطبيع النص القرآني (إزالة التشكيل وتوحيد الحروف).
+- **وضع الحفظ:** إخفاء نص الآيات مع إبقاء أرقامها، وتظهر الكلمات الصحيحة فور نطقها.
+- **ثلاثة أنماط لإرسال الصوت للخادم:** دوري `periodic`، عند التوقف `pause`، أو يدوي `manual`.
+
+### التفسير من القرطبي
+- بحث دلالي في **Qdrant** باستخدام نموذج التضمين `intfloat/multilingual-e5-large` بأبعاد 1024، ومقياس التشابه **cosine**.
+- توليد الإجابة عبر **Groq** اعتمادًا على مقتطفات القرطبي المسترجعة فقط؛ وإن لم يوجد نص مناسب يُنبَّه المستخدم أن الإجابة ليست من القرطبي مباشرة.
+- أنماط الطلب: `general` · `linguistic` · `lessons` · `custom_question`.
+- تنسيق الإجابة بعناوين وقوائم، مع خيارات للخط وحجمه وخلفية القراءة، ونسخ النص ونطقه.
+- عند تعذر الاتصال بالخادم يعرض التطبيق نصًا احتياطيًا بدل أن يفشل.
+
+### الاستماع للقراء
+- تلاوة أي آية بضغطة واحدة من **EveryAyah**، مع **23 تلاوة** لعدد من كبار القراء (العفاسي، الحصري، المنشاوي، عبد الباسط، المعيقلي، السديس، الشريم، الغامدي، ياسر الدوسري، وغيرهم).
+- تكرار الآية للمساعدة على الحفظ، وتذكّر القارئ المفضل.
+
+---
+
+## Tech Stack
+
+| Layer | Technologies |
+| :-- | :-- |
+| Frontend | React 19, TypeScript 5.8, Vite 6, Tailwind CSS 4, Motion, Lucide React |
+| Local server | Node.js + Express (`server.ts`) — serves Vite in dev and `dist/` in production |
+| Audio | Web Audio API, MediaRecorder API, HTML5 Audio |
+| Storage | localStorage (settings) |
+| Recitation (ASR) | FastAPI, PyTorch, Transformers, PEFT (LoRA), librosa, soundfile |
+| Tafsir (RAG) | FastAPI, Sentence-Transformers, Qdrant, Groq |
+| Server hosting | Google Colab (T4 GPU) + Cloudflare Tunnel / ngrok |
+
+---
+
+## Architecture
 
 ```mermaid
 graph TD
-    Client["الواجهة الأمامية (React 19 + TypeScript + Vite)"]
-    SW["Service Worker (PWA Offline Storage)"]
-    IDB[("IndexedDB (حفظ التسجيلات الصوتية)")]
-    FastAPI["خادم FastAPI الذكي (recitation_server.py)"]
-    Whisper["موديل Whisper LoRA للقرآن (KheemP/whisper-base-quran-lora)"]
-    Gemini["Google Gemini AI (التدبر الإيماني والتفسير المعمق)"]
-    EveryAyah["خوادم EveryAyah الصوتية (تلاوات كبار القراء)"]
+    UI["Frontend<br/>React 19 + Vite + Tailwind"]
+    EXP["Express server.ts<br/>(Vite dev / static prod)"]
 
-    Client -->|تخزين محلي| IDB
-    Client -->|كاشينج الصفحات| SW
-    Client -->|تحليل الصوت والتسميع| FastAPI
-    FastAPI --> Whisper
-    Client -->|توليد التدبرات والتفاسير| Gemini
-    Client -->|صوتيات الآيات| EveryAyah
+    subgraph Colab1["Colab — Recitation server"]
+        ASR["FastAPI + Whisper LoRA<br/>KheemP/whisper-base-quran-lora"]
+    end
+
+    subgraph Colab2["Colab — Tafsir server"]
+        RAG["FastAPI + RAG"]
+        QD[("Qdrant<br/>tafsir_qurtubi")]
+        GQ["Groq LLM"]
+        RAG --> QD
+        RAG --> GQ
+    end
+
+    UI --> EXP
+    UI -->|"POST /api/recite/analyze"| ASR
+    UI -->|"POST /api/tafsir"| RAG
+    UI -->|"ayah audio"| EA["EveryAyah"]
+    UI -->|"ayah text"| API["alquran.cloud / quran.com"]
+    UI -->|"page images"| IMG["medina-mushaf (jsDelivr)"]
 ```
 
-| النطاق | التقنيات المستخدمة |
-| :--- | :--- |
-| **واجهة المستخدم** | React 19, TypeScript, Vite 6, Tailwind CSS 4, Motion, Lucide React |
-| **الخطوط القرآنية** | خط عثمان طه، خط الرقعة، Amiri Quran، الخط العثماني القياسي |
-| **إدارة الصوت والتسجيل** | Web Audio API, MediaRecorder API, HTML5 Audio |
-| **التخزين والأوفلاين** | Progressive Web App (PWA), Service Worker, Cache API, IndexedDB |
-| **خادم الذكاء الاصطناعي** | FastAPI, PyTorch, HuggingFace Transformers, PEFT LoRA, Uvicorn |
-| **نموذج التعرف الصوتي** | `KheemP/whisper-base-quran-lora` (مخصص للقرآن الكريم) |
-| **تفسير وتدبر الذكاء الاصطناعي** | Google Gemini 2.5 Flash API (@google/genai) |
+**Recitation flow:** record audio (`RecordingBar`) → send to the server → Whisper transcription → word alignment against the page text (`alignment.ts`) → word coloring.
 
 ---
 
-## 🚀 طريقة التشغيل والتثبيت (Installation & Setup)
+## Getting Started
 
-### متطلبات التشغيل (Prerequisites)
-- **Node.js** (إصدار 18 فما فوق)
-- **Python** (إصدار 3.10 فما فوق - في حال تشغيل خادم الذكاء الاصطناعي محلياً)
-- كارت شاشة Nvidia يدعم CUDA (اختياري لتسريع Whisper AI محلياً)
+### Prerequisites
 
----
+- **Node.js** 18+
+- A **Google Colab** account to run the AI servers (optional if you only need the Mushaf reader)
 
-### تشغيل الواجهة الأمامية (Frontend App)
+### Install and run
 
-1. **استنساخ المستودع وتثبيت الحزم**:
-   ```bash
-   git clone https://github.com/your-username/digital-madinah-quran.git
-   cd digital-madinah-quran
-   npm install
-   ```
+```bash
+git clone https://github.com/Anasrefay/AI-Recitation-app.git
+cd AI-Recitation-app
+npm install
+cp .env.example .env
+npm run dev
+```
 
-2. **إعداد المتغيرات البيئية**:
-   قم بإنشاء ملف `.env` استناداً إلى `.env.example`:
-   ```env
-   # اختياري: مفتاح Gemini AI للتدبر المعمق
-   GEMINI_API_KEY=your_api_key_here
+Open **http://localhost:3000**.
 
-   # رابط خادم الذكاء الاصطناعي للتسميع (الافتراضي محلياً)
-   VITE_RECITER_API_URL=http://localhost:8000
-   ```
+### Production build
 
-3. **تشغيل خادم التطوير**:
-   ```bash
-   npm run dev
-   ```
-   افتح المتصفح على: `http://localhost:3000`
+```bash
+npm run build   # vite build + bundles server.ts into dist/server.cjs
+npm run start   # runs the built server from dist/
+```
 
-4. **بناء النسخة الإنتاجية**:
-   ```bash
-   npm run build
-   npm run start
-   ```
+### npm scripts
+
+| Script | Description |
+| :-- | :-- |
+| `npm run dev` | Start Express + Vite (`tsx server.ts`) on port 3000 |
+| `npm run build` | Production build |
+| `npm run start` | Run the production build |
+| `npm run lint` | Type check (`tsc --noEmit`) |
+| `npm run clean` | Remove `dist` |
 
 ---
 
-### تشغيل خادم الذكاء الاصطناعي (Whisper FastAPI Server)
+## AI Servers Setup (Google Colab)
 
-إذا أردت تفعيل ميزة التسميع والتحقق الصوتي الذكي على جهازك:
+Both servers live inside the notebooks. Each one runs on Colab, is exposed through a public URL, and that URL is pasted into the app settings.
 
-1. **تثبيت حزم بايثون**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Recitation server — `notebooks/recitation_server.ipynb`
 
-2. **بدء تشغيل سيرفر الـ FastAPI**:
-   ```bash
-   uvicorn recitation_server:app --host 0.0.0.0 --port 8000 --reload
-   ```
+1. Open the notebook in Colab, then **Runtime → Change runtime type → T4 GPU**.
+2. Run the cells **in order**: GPU check → install dependencies (ffmpeg + Python packages) → load the model (LoRA merged into the weights, float16) → define the API → start uvicorn.
+3. Get a public URL with **Cloudflare Tunnel** (cell 6.3, recommended), LocalTunnel, or ngrok.
+4. In the app: **Settings → Recitation server**, then paste the URL (stored in `localStorage`).
 
-3. سيعمل السيرفر ويقوم تلقائياً بتحميل أوزان الموديل `KheemP/whisper-base-quran-lora` المجهزة للقرآن الكريم.
+### Tafsir server — `notebooks/tafsir_qurtubi.ipynb`
 
----
+1. Add these keys to **Colab Secrets**: `QDRANT_URL`, `QDRANT_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `NGROK_TOKEN` (the notebook reads all of them via `userdata.get`).
+2. **One time only:** upload the Tafsir al-Qurtubi JSON (e.g. from [QUL](https://qul.tarteel.ai/resources/tafsir)). It is chunked, embedded, and upserted into a Qdrant collection named `tafsir_qurtubi`.
+3. Run the server cell and the **ngrok** cell, then copy the printed URL.
+4. In the app: **Settings → Tafsir server**, then paste the URL.
 
-### التشغيل السحابي عبر Google Colab
+> **Warning:** Free Colab tunnels (ngrok / Cloudflare quick tunnel) **change on every run** and stop when the notebook closes. For permanent use, deploy both servers to a host such as Render or Railway.
 
-يوفر المشروع كراسة جاهزة `recitation_server.ipynb` لتشغيل خادم التسميع على كروت شاشة Google Colab المجانية (T4 GPU) وتوليد رابط سحابي عبر Ngrok أو LocalTunnel دون استهلاك موارد جهازك المحلي:
-- افتح الملف `recitation_server.ipynb` في Google Colab.
-- قم بتشغيل الخلايا للحصول على عنوان URL عام.
-- ضعه في إعدادات التطبيق داخل نافذة "خادم التسميع".
+> **Tip:** To run the recitation server locally, `requirements.txt` lists its packages (`fastapi`, `uvicorn`, `torch`, `transformers`, `peft`, …). Export the server code from the notebook to a `.py` file and run it with `uvicorn`.
 
 ---
 
-## 📂 هيكل المشروع (Directory Structure)
+## Configuration
+
+Copy `.env.example` to `.env`:
+
+| Variable | Used by | Description |
+| :-- | :-- | :-- |
+| `GEMINI_API_KEY` | Frontend / tafsir notebook | Gemini API key (injected at runtime by AI Studio) |
+| `APP_URL` | Frontend | Where the app is hosted (e.g. `http://localhost:3000` locally) |
+| `QDRANT_URL` / `QDRANT_API_KEY` | Tafsir notebook | Qdrant Cloud connection |
+| `GROQ_API_KEY` | Tafsir notebook | Groq key for answer generation |
+| `NGROK_TOKEN` | Tafsir notebook | Exposes the server through a public URL |
+
+> **Caution:** `.env` is git-ignored. Never commit your API keys.
+
+---
+
+## API Reference
+
+### Recitation server (FastAPI)
+
+| Method | Path | Description |
+| :-- | :-- | :-- |
+| `GET` | `/`, `/health` | Server and GPU status |
+| `POST` | `/api/recite/analyze` | Analyze a full recording or chunks. `multipart` fields: `audio`, `page_number`, `reference_text` |
+| `WS` | `/ws/recite` | Live stream: client sends PCM int16 / 16 kHz / mono, server replies with `partial` and `final` messages |
+
+Optional WebSocket query params: `?vad=0.01&step=0.7&silence=0.8&max_seg=25`
+
+Real-time tuning constants (top of the API cell):
+
+| Constant | Default | Meaning |
+| :-- | :-- | :-- |
+| `STEP_S` | `0.7` | Seconds of new audio between `partial` updates |
+| `END_SILENCE_S` | `0.8` | Silence that ends a segment and emits `final` |
+| `MAX_SEG_S` | `25` | Max segment length (Whisper limit is 30 s) |
+| `VAD_RMS` | `0.010` | Energy threshold for voice activity detection |
+
+### Tafsir server (FastAPI)
+
+| Method | Path | Description |
+| :-- | :-- | :-- |
+| `GET` | `/health` | Health check |
+| `POST` | `/api/tafsir` | Request an ayah tafsir (surah, ayah number, text, mode, optional question) |
+
+RAG settings: `SCORE_THRESHOLD = 0.5`, up to `MAX_CONTEXT_HITS = 3` retrieved passages, each truncated to `MAX_CHARS_PER_HIT = 800`.
+
+### Local Express server
+
+| Method | Path | Description |
+| :-- | :-- | :-- |
+| `GET` | `/api/health` | App server health check |
+| `POST` | `/api/recite/stream-chunk` | Placeholder endpoint that returns an empty transcription |
+
+---
+
+## Project Structure
 
 ```text
-├── docs/
-│   └── images/                # الصور التوضيحية والشاشات الخاصة بالتوثيق
+AI-Recitation-app/
+├── notebooks/
+│   ├── recitation_server.ipynb   # Whisper LoRA + FastAPI + WebSocket server
+│   └── tafsir_qurtubi.ipynb      # Qurtubi → Qdrant indexing + tafsir server
 ├── public/
-│   ├── QuranLogo.png          # شعار المصحف الشريف
-│   ├── icon.svg               # أيقونة الـ PWA
-│   ├── manifest.json          # إعدادات تثبيت الـ PWA
-│   └── sw.js                  # مشغل الـ Service Worker للتخزين أوفلاين
+│   ├── screenshots/              # README screenshots
+│   ├── manifest.json             # Web app manifest
+│   └── icon.svg, QuranLogo.png   # Icons and logo
 ├── src/
+│   ├── App.tsx                   # Root component and state
 │   ├── components/
-│   │   ├── Audio/             # مشغل صوتيات الآيات وكبار القراء
-│   │   ├── Header/            # شريط التحكم العلوي والبحث والإعدادات
-│   │   ├── MushafPage/        # عارض صفحات المصحف الشريف والنص التفاعلي
-│   │   ├── Navigation/        # فهارس السور والأجزاء والانتقال السريع
-│   │   ├── Offline/           # نافذة إدارة التحميل بدون إنترنت
-│   │   ├── Recitation/        # أدوات التسميع وتحليل الصوت الذكي
-│   │   ├── Recording/         # مسجل الصوت الشخصي وقاعدة بيانات التسجيلات
-│   │   ├── Settings/          # تفضيلات المظهر والخطوط
-│   │   └── Tafsir/            # نافذة التفسير المتعدد والتدبر
-│   ├── data/                  # بيانات السور والأجزاء والقراء المعتمدين
-│   ├── lib/                   # محركات IndexedDB، الاتصال بالسيرفر، وتوليد الصوت
-│   ├── App.tsx                # نقطة الدخول والمكون الرئيسي
-│   └── index.css              # تنسيقات Tailwind CSS والخطوط العثمانية
-├── recitation_server.py       # خادم FastAPI للتعرف على التلاوة ونموذج Whisper
-├── recitation_server.ipynb    # كراسة Colab لتشغيل الموديل سحابياً
-├── server.ts                  # خادم Node.js / Express
+│   │   ├── Audio/                # Ayah audio player and reciters
+│   │   ├── Header/               # Top bar
+│   │   ├── MushafPage/           # Page viewer (image / text)
+│   │   ├── Navigation/           # Index modal and page navigator
+│   │   ├── Recitation/           # Recitation settings
+│   │   ├── Recording/            # Recording bar
+│   │   ├── Settings/             # Settings and themes
+│   │   └── Tafsir/               # Tafsir modal
+│   ├── data/                     # Surahs, juz, reciters, page metadata
+│   └── lib/
+│       ├── recitation/           # Server client + word alignment + types
+│       ├── recording/            # MediaRecorder (audio capture)
+│       ├── fastapi-tafsir.ts     # Tafsir server client
+│       ├── quran-verses.ts       # Ayah text fetching
+│       └── quran-data.ts         # Page image sources
+├── server.ts                     # Express (Vite middleware / static files)
+├── requirements.txt              # Python deps for the recitation server
+├── .env.example
 └── package.json
 ```
 
 ---
 
-## ⌨️ اختصارات لوحة المفاتيح والتنقل (Keyboard Shortcuts)
+## Keyboard Shortcuts
 
-| المفتاح | الإجراء |
-| :--- | :--- |
-| `←` (السهم الأيسر) | الانتقال للصفحة التالية (تصفح عربي RTL) |
-| `→` (السهم الأيمن) | الانتقال للصفحة السابقة |
-| `Space` | إيقاف / متابعة التسجيل أو الصوت |
-| `Esc` | إغلاق أي نافذة مفتوحة (الفهرس، التفسير، الإعدادات) |
-| `F` | تفعيل وضع ملء الشاشة لقراءة خالية من المشتتات |
-
----
-
-## 📜 مصادر البيانات والتراخيص (Data Sources & Credits)
-
-- **نص وصفحات المصحف الشريف**: مجمع الملك فهد لطباعة المصحف الشريف بالمدينة المنورة.
-- **فهارس الآيات والسور**: مستخرجة من قاعدة بيانات مشروع [Tanzil.net](https://tanzil.net/) المفتوحة.
-- **التلاوات الصوتية لكبار القراء**: مستضافة عبر خوادم مشروع [EveryAyah.com](https://everyayah.com/).
-- **نموذج الذكاء الاصطناعي للتلاوة**: نموذج `whisper-base-quran-lora` المبني على Hugging Face بواسطة مجتمع المطورين الإسلامي.
-- **التفاسير الشرعية**: معتمدة من كتب التفسير المحققة برخص الاستخدام الدعوي غير التجاري.
+| Key | Action |
+| :-- | :-- |
+| `←` | Next page (RTL reading) |
+| `→` | Previous page |
+| `Space` / `PageDown` | Next page |
+| `PageUp` | Previous page |
+| `Esc` | Close the ayah audio player |
 
 ---
 
-## 🤝 المساهمة والتطوير (Contributing)
+## Troubleshooting
 
-نرحب بكافة المساهمات والمقترحات لتطوير هذا الوقف الرقمي لخدمة كتاب الله!
-1. قم بعمل Fork للمستودع.
-2. أنشئ فرعاً لميزتك الجديدة (`git checkout -b feature/NewFeature`).
-3. احفظ التعديلات (`git commit -m 'Add NewFeature'`).
-4. ارفع التعديلات للفرع (`git push origin feature/NewFeature`).
-5. أنشئ طلب دمج (Pull Request).
+| Problem | Fix |
+| :-- | :-- |
+| App can't reach the recitation server | Make sure the server cell is still running in Colab and the URL in Settings is up to date (free tunnel URLs change) |
+| Microphone not working | Grant the browser microphone permission; **HTTPS** or `localhost` is required |
+| Server is very slow | Check that `CUDA Available: True` in the GPU check cell |
+| LocalTunnel password page | Use Cloudflare Tunnel (cell 6.3) — it supports WebSocket and needs no password |
+| Tafsir shows fallback text | The tafsir server is unreachable; run the notebook and update the URL in Settings |
 
 ---
 
-## ⚖️ الترخيص (License)
+## Acknowledgments
 
-هذا المشروع وقف رقمي خالص ومتاح للاستخدام والنشر تحت رخصة مفتوحة المصدر لخدمة الإسلام والمسلمين، ولا يجوز استخدامه في أي غرض تجاري يخالف روح الوقفية.
+- **Page images:** [medina-mushaf](https://github.com/sufone/medina-mushaf), served via jsDelivr.
+- **Ayah text:** [AlQuran Cloud](https://alquran.cloud/) and the [Quran.com API](https://quran.com/).
+- **Audio recitations:** [EveryAyah](https://everyayah.com/).
+- **Recitation model:** [`KheemP/whisper-base-quran-lora`](https://huggingface.co/KheemP/whisper-base-quran-lora), built on OpenAI Whisper.
+- **Tafsir al-Qurtubi data:** [QUL — Tarteel](https://qul.tarteel.ai/resources/tafsir).
+- **Embeddings:** [`intfloat/multilingual-e5-large`](https://huggingface.co/intfloat/multilingual-e5-large).
+
+---
+
+## License
+
+Source files carry an **Apache-2.0** license header. Third-party data, images, and audio listed above remain subject to their owners' licenses — review them before any commercial use.
 
 <div align="center">
-  <sub>اللهم اجعل القرآن العظيم ربيع قلوبنا، ونور صدورنا، وجلاء أحزاننا، وذهاب همومنا.</sub>
+  <sub>اللهم اجعل القرآن العظيم ربيع قلوبنا ونور صدورنا.</sub>
 </div>
